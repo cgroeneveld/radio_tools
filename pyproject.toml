@@ -5,4 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "radio_tools"
 version = "0.0.1"
-dependencies = []
+dependencies = ["astropy"]
+authors = [
+  { name="Christian Groeneveld", email="groeneveld@strw.leidenuniv.nl" },
+]
+description = "Tools for radio astronomy"
+readme = "README.md"
+
+[project.scripts]
+radio-tools = radio_tools:main
