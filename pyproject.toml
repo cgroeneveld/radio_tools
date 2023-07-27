@@ -13,4 +13,4 @@ description = "Tools for radio astronomy"
 readme = "README.md"
 
 [project.scripts]
-radio-tools = "getwscleancall:main"
+getwscleancall = "radio_tools.getwscleancall:main"
