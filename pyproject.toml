@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "radio_tools"
 version = "0.0.1"
-dependencies = ["astropy"]
+dependencies = ["astropy","numpy","argparse"]
 authors = [
   { name="Christian Groeneveld", email="groeneveld@strw.leidenuniv.nl" },
 ]
@@ -14,3 +14,5 @@ readme = "README.md"
 
 [project.scripts]
 getwscleancall = "radio_tools.getwscleancall:main"
+std-img = "radio_tools._imaging_tools_cli:std_img"
+pix-per-beam = "radio_tools._imaging_tools_cli:calculate_pixels_per_beam"
