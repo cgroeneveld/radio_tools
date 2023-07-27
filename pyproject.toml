@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>64.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -13,4 +13,4 @@ description = "Tools for radio astronomy"
 readme = "README.md"
 
 [project.scripts]
-radio-tools = radio_tools:main
+radio-tools = "getwscleancall:main"
