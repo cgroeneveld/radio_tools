@@ -9,4 +9,4 @@ def main():
     head = fits.getheader(filename)
     hist = head['HISTORY']
     call = ''.join(hist)
-    return call
+    print(call)
