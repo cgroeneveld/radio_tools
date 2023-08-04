@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "radio_tools"
-version = "0.0.1"
-dependencies = ["astropy","numpy","argparse","dynesty"]
+version = "0.1.0"
+dependencies = ["astropy","numpy","argparse","dynesty","multiprocessing"]
 authors = [
   { name="Christian Groeneveld", email="groeneveld@strw.leidenuniv.nl" },
 ]
