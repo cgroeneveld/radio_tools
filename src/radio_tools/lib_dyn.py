@@ -73,7 +73,7 @@ class CubicModel(Model):
     def model(self, x):
         return self.theta[0]*x**3+self.theta[1]*x**2+self.theta[2]*x+self.theta[3]
 
-def PowerlawCutoff(Model):
+class PowerlawCutoff(Model):
     '''
         A 1D powerlaw with a cutoff
     '''
@@ -84,8 +84,8 @@ def PowerlawCutoff(Model):
         self.reffreq = reffreq
         self.model = np.vectorize(self._model)
 
-    def model(self, x):
-        return self.theta[0]*10**(self.theta[1]*np.log10(x/self.reffreq)*x/self.theta[2])
+    def _model(self, x):
+        return self.theta[0]*10**(self.theta[1]*np.log10(x/self.reffreq))*np.exp(-x/self.theta[2])
 
 class Powerlaw(Model):
     '''
@@ -105,20 +105,6 @@ class Powerlaw(Model):
     def _model(self, x):
         return self.theta[0]*10**(np.sum(np.log10(x/self.reffreq)**self.order_list*self.powerlaw_terms))
 
-
-class alt_BrokenPowerlaw(Model):
-    '''
-        A broken powerlaw model, containing a set parameters theta that can be evaluated at a given x
-    '''
-    log = True
-
-    def __init__(self, theta, reffreq=150e6):
-        self.theta = theta
-        self.reffreq = reffreq
-        self.model = np.vectorize(self._model)
-
-    def _model(self, x):
-        return self.theta[0]*10**(self.theta[1]*np.log10(x/self.reffreq))+self.theta[2]*10**(self.theta[3]*np.log10(x/self.reffreq))
 
 
 class BrokenPowerlaw(Model):

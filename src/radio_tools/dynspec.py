@@ -9,8 +9,9 @@ class Ensemble():
         Ensemble of scenarios, to be used for comparison
     '''
 
-    def __init__(self, scenarios, x=None, y=None, yerr=None):
+    def __init__(self, scenarios, x=None, y=None, yerr=None, nthreads=mp.cpu_count()):
         self.scenarios = scenarios
+        self.nthreads = nthreads
         if x is not None:
             self.add_data(x, y, yerr)
 
@@ -26,6 +27,7 @@ class Ensemble():
         evidences = []
         results = []
         for scenario in self.scenarios:
+            scenario.nthreads = self.nthreads
             res = scenario.run()
             evidences.append(res.logz[-1])
             results.append(res)
@@ -59,22 +61,24 @@ class Scenario():
     '''
     prior_type = 'linear'
     model = lib_dyn.Model  # Placeholder model-
-    nwalkers = 100
+    nwalkers = 300
     bound = 'single'
     sample = 'auto'
     name = 'Model'
 
-    def __init__(self, bounds, x=None, y=None, yerr=None):
+    def __init__(self, bounds, x=None, y=None, yerr=None, nthreads=1):
         self.boundlist = []
         for bound in bounds:
             self.boundlist.append([bound[0], bound[1], self.prior_type])
         self.prior = lib_dyn.Prior(self.boundlist)
         self.x = x
         self.y = y
+        self.order = len(bounds)
+        self.nthreads = nthreads
         self.yerr = yerr
         self.ndim = len(self.boundlist)
 
-    def set_data(self,x, y, yerr):
+    def set_data(self, x, y, yerr):
         self.x = x
         self.y = y
         if yerr is not ModuleNotFoundError:
@@ -88,7 +92,7 @@ class Scenario():
 
     def run(self):
         sampler = dynesty.DynamicNestedSampler(
-            self.loglikelihood, self.prior,pool=mp.Pool(96), ndim=self.ndim, nlive=self.nwalkers, bound=self.bound, sample=self.sample,queue_size=96)
+            self.loglikelihood, self.prior, pool=mp.Pool(self.nthreads), ndim=self.ndim, nlive=self.nwalkers, bound=self.bound, sample=self.sample, queue_size=self.nthreads)
         sampler.run_nested()
         return sampler.results
 
@@ -100,7 +104,7 @@ class PowerlawScenario(Scenario):
     '''
     prior_type = 'linear'
     model = lib_dyn.Powerlaw
-    
+
     def __init__(self, bounds, x=None, y=None, yerr=None):
         self.order = len(bounds)
         super().__init__(bounds, x, y, yerr)
@@ -108,19 +112,21 @@ class PowerlawScenario(Scenario):
         self.prior = lib_dyn.Prior(self.boundlist)
         self.name = 'Powerlaw order ' + str(self.order)
 
+
 class CutoffScenario(Scenario):
     '''
         Scenario to fit a powerlaw with a cutoff to your data
     '''
     prior_type = 'linear'
     model = lib_dyn.PowerlawCutoff
+    name = 'Powerlaw with cutoff'
 
     def __init__(self, bounds, x=None, y=None, yerr=None):
         assert len(bounds) == 3
         super().__init__(bounds, x, y, yerr)
         self.boundlist[0][2] = 'log'
         self.prior = lib_dyn.Prior(self.boundlist)
-        self.name = 'Powerlaw order ' + str(self.order)
+        self.boundlist[2][2] = 'log'
 
 
 class BrokenPowerlaw(Scenario):
@@ -142,6 +148,6 @@ class BrokenPowerlaw(Scenario):
 
     def run(self):
         sampler = dynesty.DynamicNestedSampler(
-            self.loglikelihood, self.prior, ndim=self.ndim, nlive=self.nwalkers, pool=mp.Pool(96),queue_size=96, bound=self.bound, sample=self.sample)
+            self.loglikelihood, self.prior, ndim=self.ndim, nlive=self.nwalkers, pool=mp.Pool(96), queue_size=96, bound=self.bound, sample=self.sample)
         sampler.run_nested()
         return sampler.results
