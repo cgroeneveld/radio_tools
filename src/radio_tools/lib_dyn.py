@@ -73,6 +73,19 @@ class CubicModel(Model):
     def model(self, x):
         return self.theta[0]*x**3+self.theta[1]*x**2+self.theta[2]*x+self.theta[3]
 
+def PowerlawCutoff(Model):
+    '''
+        A 1D powerlaw with a cutoff
+    '''
+    log = True
+
+    def __init__(self, theta, reffreq=150e6):
+        self.theta = theta
+        self.reffreq = reffreq
+        self.model = np.vectorize(self._model)
+
+    def model(self, x):
+        return self.theta[0]*10**(self.theta[1]*np.log10(x/self.reffreq)*x/self.theta[2])
 
 class Powerlaw(Model):
     '''
@@ -93,21 +106,36 @@ class Powerlaw(Model):
         return self.theta[0]*10**(np.sum(np.log10(x/self.reffreq)**self.order_list*self.powerlaw_terms))
 
 
-def log_likelihood(model, x, y, yerr):
+class alt_BrokenPowerlaw(Model):
     '''
-        Calculate the log likelihood of a model given data and errors
-        Assumes Gaussian errors
+        A broken powerlaw model, containing a set parameters theta that can be evaluated at a given x
     '''
-    return -0.5*np.sum((y-model(x))**2/yerr**2)
+    log = True
+
+    def __init__(self, theta, reffreq=150e6):
+        self.theta = theta
+        self.reffreq = reffreq
+        self.model = np.vectorize(self._model)
+
+    def _model(self, x):
+        return self.theta[0]*10**(self.theta[1]*np.log10(x/self.reffreq))+self.theta[2]*10**(self.theta[3]*np.log10(x/self.reffreq))
 
 
-def evaluateSampler(model, x, y, yerr, priorlist, loglikelihood, nwalkers=100, ndim=None, nthreads=1, **kwargs):
+class BrokenPowerlaw(Model):
     '''
-        Evaluate a sampler for a given model, data, and priors
-        Returns the sampler
+        A broken powerlaw model, containing a set parameters theta that can be evaluated at a given x
     '''
-    if ndim is None:
-        ndim = model.ndim
-    sampler = dynesty.NestedSampler(loglikelihood, priorlist, ndim, nlive=nwalkers, bound='multi', sample='unif', pool=dynesty.utils.get_pool(nthreads), queue_size=nthreads, **kwargs)
-    sampler.run_nested()
-    return sampler
+
+    log = True
+    def __init__(self, theta, reffreq=150e6):
+        self.theta = theta
+        self.reffreq = reffreq
+        self.model = np.vectorize(self._model)
+
+    def _model(self, x):
+        I,s1,s2,vbreak = self.theta
+        I_break = I*10**(s1*np.log10(vbreak/self.reffreq))
+        if x > vbreak:
+            return I_break*10**(s2*np.log10(x/vbreak))
+        else:
+            return I*10**(s1*np.log10(x/self.reffreq))

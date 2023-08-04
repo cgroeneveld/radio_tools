@@ -1,4 +1,5 @@
 import dynesty
+import multiprocessing as mp
 import numpy as np
 from . import lib_dyn
 
@@ -32,6 +33,8 @@ class Ensemble():
         print('Best evidence: ', np.max(evidences))
         print('Best scenario: ', np.argmax(evidences))
         print('Model parameters: ', results[np.argmax(evidences)].samples[-1])
+        self.results = results
+        self.evidences = evidences
         return self.scenarios[np.argmax(evidences)].model(results[np.argmax(evidences)].samples[-1])
 
 
@@ -56,9 +59,9 @@ class Scenario():
     '''
     prior_type = 'linear'
     model = lib_dyn.Model  # Placeholder model-
-    nwalkers = 500
+    nwalkers = 100
     bound = 'single'
-    sample = 'unif'
+    sample = 'auto'
     name = 'Model'
 
     def __init__(self, bounds, x=None, y=None, yerr=None):
@@ -85,7 +88,7 @@ class Scenario():
 
     def run(self):
         sampler = dynesty.DynamicNestedSampler(
-            self.loglikelihood, self.prior, ndim=self.ndim, nlive=self.nwalkers, bound=self.bound, sample=self.sample)
+            self.loglikelihood, self.prior,pool=mp.Pool(96), ndim=self.ndim, nlive=self.nwalkers, bound=self.bound, sample=self.sample,queue_size=96)
         sampler.run_nested()
         return sampler.results
 
@@ -97,10 +100,48 @@ class PowerlawScenario(Scenario):
     '''
     prior_type = 'linear'
     model = lib_dyn.Powerlaw
-
+    
     def __init__(self, bounds, x=None, y=None, yerr=None):
         self.order = len(bounds)
         super().__init__(bounds, x, y, yerr)
         self.boundlist[0][2] = 'log'
         self.prior = lib_dyn.Prior(self.boundlist)
         self.name = 'Powerlaw order ' + str(self.order)
+
+class CutoffScenario(Scenario):
+    '''
+        Scenario to fit a powerlaw with a cutoff to your data
+    '''
+    prior_type = 'linear'
+    model = lib_dyn.PowerlawCutoff
+
+    def __init__(self, bounds, x=None, y=None, yerr=None):
+        assert len(bounds) == 3
+        super().__init__(bounds, x, y, yerr)
+        self.boundlist[0][2] = 'log'
+        self.prior = lib_dyn.Prior(self.boundlist)
+        self.name = 'Powerlaw order ' + str(self.order)
+
+
+class BrokenPowerlaw(Scenario):
+    '''
+        Scenario to fit a broken powerlaw to your data
+    '''
+    prior_type = 'linear'
+    model = lib_dyn.BrokenPowerlaw
+    bound = 'single'
+    sample = 'rwalk'
+
+    def __init__(self, bounds, x=None, y=None, yerr=None):
+        assert len(bounds) == 4
+        super().__init__(bounds, x, y, yerr)
+        self.boundlist[0][2] = 'log'
+        self.boundlist[3][2] = 'log'
+        self.prior = lib_dyn.Prior(self.boundlist)
+        self.name = 'Broken powerlaw'
+
+    def run(self):
+        sampler = dynesty.DynamicNestedSampler(
+            self.loglikelihood, self.prior, ndim=self.ndim, nlive=self.nwalkers, pool=mp.Pool(96),queue_size=96, bound=self.bound, sample=self.sample)
+        sampler.run_nested()
+        return sampler.results
