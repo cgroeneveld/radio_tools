@@ -92,7 +92,7 @@ class Scenario():
 
     def run(self):
         sampler = dynesty.DynamicNestedSampler(
-            self.loglikelihood, self.prior, pool=mp.Pool(self.nthreads), ndim=self.ndim, nlive=self.nwalkers, bound=self.bound, sample=self.sample, queue_size=self.nthreads)
+            self.loglikelihood, self.prior, bootstrap=0, pool=mp.Pool(self.nthreads), ndim=self.ndim, nlive=self.nwalkers, bound=self.bound, sample=self.sample, queue_size=self.nthreads)
         sampler.run_nested()
         return sampler.results
 
@@ -120,6 +120,8 @@ class CutoffScenario(Scenario):
     prior_type = 'linear'
     model = lib_dyn.PowerlawCutoff
     name = 'Powerlaw with cutoff'
+    bound = 'single'
+    sample = 'rwalk'
 
     def __init__(self, bounds, x=None, y=None, yerr=None):
         assert len(bounds) == 3
