@@ -37,8 +37,13 @@ class Ensemble():
         print('Model parameters: ', results[np.argmax(evidences)].samples[-1])
         self.results = results
         self.evidences = evidences
-        return self.scenarios[np.argmax(evidences)].model(results[np.argmax(evidences)].samples[-1])
+        self.model = self.scenarios[np.argmax(evidences)].model(results[np.argmax(evidences)].samples[-1])
+        return results[np.argmax(evidences)]
 
+    @property
+    def cov(self):
+        best_scenario = self.scenarios[np.argmax(self.evidences)]
+        return best_scenario.cov
 
 class MultiPowerlaw(Ensemble):
     '''
@@ -94,8 +99,16 @@ class Scenario():
         sampler = dynesty.DynamicNestedSampler(
             self.loglikelihood, self.prior, bootstrap=0, pool=mp.Pool(self.nthreads), ndim=self.ndim, nlive=self.nwalkers, bound=self.bound, sample=self.sample, queue_size=self.nthreads)
         sampler.run_nested()
+        self.results = sampler.results
         return sampler.results
 
+    @property
+    def cov(self):
+        if self.results != None:
+            mean, cov = dynesty.utils.mean_and_cov(self.results.samples, self.results.importance_weights())
+            return cov
+        else:
+            raise ValueError('No results found. Run the scenario first.')
 
 class PowerlawScenario(Scenario):
     '''
