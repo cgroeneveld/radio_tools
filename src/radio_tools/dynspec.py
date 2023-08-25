@@ -16,7 +16,9 @@ class Ensemble():
             self.add_data(x, y, yerr)
 
     def add_scenario(self, scenario):
+        scenario.set_data(self.x,self.y,self.yerr)
         self.scenarios.append(scenario)
+        
 
     def add_data(self, x, y, yerr):
         for scenario in self.scenarios:
@@ -96,6 +98,8 @@ class Scenario():
         return -0.5*np.sum((self.y-model(self.x))**2/self.yerr**2)
 
     def run(self):
+        if self.x == None or self.y == None or self.yerr == None:
+            raise ValueError('No data provided.')
         sampler = dynesty.DynamicNestedSampler(
             self.loglikelihood, self.prior, bootstrap=0, pool=mp.Pool(self.nthreads), ndim=self.ndim, nlive=self.nwalkers, bound=self.bound, sample=self.sample, queue_size=self.nthreads)
         sampler.run_nested()
